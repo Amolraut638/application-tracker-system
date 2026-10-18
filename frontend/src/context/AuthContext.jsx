@@ -21,14 +21,28 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     apiClient
       .get('/auth/me', { validateStatus: (s) => s === 200 || s === 401 })
-      .then((res) => setRecruiter(res.status === 200 ? res.data.recruiter : null))
-      .catch(() => setRecruiter(null))
+      .then((res) => {
+        if (res.status === 200) {
+          if (res.data.token) localStorage.setItem('hireflow_token', res.data.token)
+          setRecruiter(res.data.recruiter)
+        } else {
+          localStorage.removeItem('hireflow_token')
+          setRecruiter(null)
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('hireflow_token')
+        setRecruiter(null)
+      })
       .finally(() => setIsLoading(false))
   }, [])
 
   // ── Login ─────────────────────────────────────────────
   const login = useCallback(async (email, password) => {
     const res = await apiClient.post('/auth/login', { email, password })
+    if (res.data.token) {
+      localStorage.setItem('hireflow_token', res.data.token)
+    }
     setRecruiter(res.data.recruiter)
     return res.data.recruiter
   }, [])
@@ -36,6 +50,9 @@ export function AuthProvider({ children }) {
   // ── Register ──────────────────────────────────────────
   const register = useCallback(async (name, email, password) => {
     const res = await apiClient.post('/auth/register', { name, email, password })
+    if (res.data.token) {
+      localStorage.setItem('hireflow_token', res.data.token)
+    }
     setRecruiter(res.data.recruiter)
     return res.data.recruiter
   }, [])
@@ -47,6 +64,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Even if the API call fails, clear client state
     }
+    localStorage.removeItem('hireflow_token')
     setRecruiter(null)
   }, [])
 

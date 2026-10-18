@@ -9,7 +9,13 @@ import Recruiter from '../models/Recruiter.js'
  */
 export async function protect(req, res, next) {
   try {
-    const token = req.cookies?.token
+    let token = req.cookies?.token
+
+    // Fallback to Authorization: Bearer <token> for cross-site deployments
+    // where browsers restrict third-party cookies (e.g. Vercel -> Render)
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1]
+    }
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Not authenticated' })
@@ -28,6 +34,7 @@ export async function protect(req, res, next) {
       return res.status(401).json({ success: false, message: 'Account no longer exists' })
     }
 
+    req.token = token
     req.recruiter = recruiter.toSafeObject()
     next()
   } catch (err) {

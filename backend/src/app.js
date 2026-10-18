@@ -17,6 +17,9 @@ const NODE_ENV    = process.env.NODE_ENV    ?? 'development'
 
 const app = express()
 
+// ── Trust proxy (required for Render / reverse proxies to detect HTTPS & cookies) ──
+app.set('trust proxy', 1)
+
 // ── Security headers ─────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -26,7 +29,7 @@ app.use(helmet({
 app.use(cors({
   origin: CLIENT_URL.split(',').map((o) => o.trim()),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true, // required for cookies
 }))
 

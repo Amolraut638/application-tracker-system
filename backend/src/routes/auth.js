@@ -75,11 +75,12 @@ router.post('/register', authLimiter, async (req, res, next) => {
     const recruiter = await Recruiter.create({ name: name.trim(), email, password })
 
     // Issue session immediately after registration
-    issueToken(res, recruiter._id)
+    const token = issueToken(res, recruiter._id)
 
     return res.status(201).json({
       success: true,
       message: 'Account created successfully.',
+      token,
       recruiter: recruiter.toSafeObject(),
     })
   } catch (err) {
@@ -122,11 +123,12 @@ router.post('/login', authLimiter, async (req, res, next) => {
       return res.status(401).json({ success: false, message: invalidMsg })
     }
 
-    issueToken(res, recruiter._id)
+    const token = issueToken(res, recruiter._id)
 
     return res.status(200).json({
       success: true,
       message: 'Logged in successfully.',
+      token,
       recruiter: recruiter.toSafeObject(),
     })
   } catch (err) {
@@ -139,7 +141,11 @@ router.post('/login', authLimiter, async (req, res, next) => {
 
 // ── GET /api/auth/me ─────────────────────────────────────
 router.get('/me', protect, (req, res) => {
-  return res.status(200).json({ success: true, recruiter: req.recruiter })
+  return res.status(200).json({
+    success: true,
+    token: req.token,
+    recruiter: req.recruiter,
+  })
 })
 
 // ── POST /api/auth/logout ─────────────────────────────────
