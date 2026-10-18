@@ -36,6 +36,16 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }))
 app.use(cookieParser())
 
 // ── Routes ───────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    name: 'HireFlow ATS API',
+    status: 'online',
+    health: '/api/health',
+    version: '1.0.0',
+  })
+})
+
 app.use('/api', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/candidates', candidatesRouter)
