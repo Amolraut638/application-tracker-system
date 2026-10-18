@@ -1,7 +1,64 @@
-/**
- * app.js — reserved for Phase 2.
- *
- * In Phase 1 all Express setup lives in server.js.
- * This file will be refactored in Phase 2 to separate
- * the Express app from the server bootstrap (for testability).
- */
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import helmet from 'helmet'
+import mongoose from 'mongoose'
+
+import healthRouter      from './routes/health.js'
+import authRouter        from './routes/auth.js'
+import candidatesRouter  from './routes/candidates.js'
+import dashboardRouter   from './routes/dashboard.js'
+import resumeRouter      from './routes/resume.js'
+import aiSummaryRouter   from './routes/aiSummary.js'
+
+const CLIENT_URL  = process.env.CLIENT_URL  ?? 'http://localhost:5173'
+const NODE_ENV    = process.env.NODE_ENV    ?? 'development'
+
+const app = express()
+
+// ── Security headers ─────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}))
+
+// ── CORS — credentialed, explicit origin, no wildcard ────
+app.use(cors({
+  origin: CLIENT_URL.split(',').map((o) => o.trim()),
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  credentials: true, // required for cookies
+}))
+
+// ── Body parsing ─────────────────────────────────────────
+app.use(express.json({ limit: '10kb' }))
+app.use(express.urlencoded({ extended: true, limit: '10kb' }))
+app.use(cookieParser())
+
+// ── Routes ───────────────────────────────────────────────
+app.use('/api', healthRouter)
+app.use('/api/auth', authRouter)
+app.use('/api/candidates', candidatesRouter)
+app.use('/api/candidates/:id/resume', resumeRouter)
+app.use('/api/candidates', aiSummaryRouter) // POST /:id/ai-summary
+app.use('/api/dashboard', dashboardRouter)
+
+// ── 404 handler ──────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' })
+})
+
+// ── Global error handler ─────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error('[Error]', err.message ?? 'Internal server error')
+  res.status(err.statusCode ?? 500).json({
+    success: false,
+    message: NODE_ENV === 'production' ? 'Internal server error' : (err.message ?? 'Internal server error'),
+  })
+})
+
+// Disable Mongoose command buffering globally so ops fail fast when no connection
+mongoose.set('bufferCommands', false)
+
+export default app
