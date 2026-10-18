@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 
 const router = Router()
 
@@ -8,11 +9,12 @@ const router = Router()
  * Does NOT expose secrets or connection strings.
  */
 router.get('/health', (_req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1
   res.status(200).json({
     success: true,
     service: 'hireflow-api',
     version: '1.0.0',
-    phase: 'Phase 1 — No database',
+    database: dbConnected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
     uptime: Math.round(process.uptime()),
   })
